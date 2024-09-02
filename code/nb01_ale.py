@@ -26,6 +26,7 @@
 # We start by loading the relevant packages.
 
 # %%
+# 加载必要的包
 from os import makedirs, path
 
 import numpy as np
@@ -33,13 +34,14 @@ import pandas as pd
 from IPython.display import display
 from nibabel import save
 from nilearn import image, plotting, reporting
-from nimare import correct, io, meta, utils
+from nimare import correct, io, meta, utils #主要用nimare完成元分析
 from scipy.stats import norm
 
 # %% [markdown]
 # Next, we read the spreadsheet file with the description information about all experiments. It contains one row for each experiment and one column for each variable (sample size `n`, `age_mean` of the children etc.), not all of which are important here. Note that the `if __name__ == "__main__"` statement doesn't do any work here—it just needs to be there because we want to reuse the functions that we're defining here in some of the later notebooks.
 
 # %%
+"""
 if __name__ == "__main__":
 
     # Read spreadsheet with included experiments
@@ -51,11 +53,13 @@ if __name__ == "__main__":
 
     # Let's take a look
     display(exps)
+    """
 
 # %% [markdown]
 # Note that for two of these experiments, the `age_mean` has not been reported in the original article. Because we want to look at age-related changes later on, we need to fill in these missing values. As a proxy, we simply use the midpoint of the age range (which has been reported for both of them). We also compute the `median()` of `age_mean` across all experiments which we will use later on to perform a median split analysis (i.e., older vs. younger children).
 
 # %%
+"""
 if __name__ == "__main__":
 
     # Fill in mean age if missing (using the midpoint of min and max)
@@ -68,11 +72,13 @@ if __name__ == "__main__":
 
     # Compute median of mean ages (for median split analysis)
     age_md = exps["age_mean"].median()
+    """
 
 # %% [markdown]
 # The next step is to get the actual peak coordinates for all experiments. We've already extracted these from the original papers and stored them into separte `.csv` files. From there, we can directly read them into a new column of our DataFrame. They are stored as $k\times3$ or $k\times4$ NumPy arrays (where $k$ is the number of reported peaks for this experiment). The first three columns contain the x, y, and z coordinates while the fourth column (if available) contains the peak test statistic (a *t* score or *z* score). Since some of the experiments reported the coordinates in Talairach space, we need to convert those into our common standard MNI space using the *icbm2tal* transform (Lancaster et al., 2007, *Hum Brain Mapp*).
 
 # %%
+"""
 if __name__ == "__main__":
 
     # Read peak coordinates from .csv files
@@ -96,12 +102,14 @@ if __name__ == "__main__":
     # Backup the DataFrame for reuse in other notebooks
     makedirs("../results/", exist_ok=True)
     exps.to_json("../results/exps.json")
+    """
 
 # %% [markdown]
 # With this, we can go on to write the Sleuth text files on the basis of which the actual ALEs will be performed. Each of these text files needs to contain the coordinates from all the relevant experiments. We define a helper function that extracts these from our DataFrame and writes them into a new text file that has the required Sleuth format.
 
 # %%
 # Define function to write a certain subset of the experiments to a Sleuth text file
+"""
 def write_peaks_to_sleuth(text_file, df, query):
 
     makedirs(path.dirname(text_file), exist_ok=True)
@@ -117,12 +125,13 @@ def write_peaks_to_sleuth(text_file, df, query):
         np.savetxt(f, peaks_mni, fmt="%1.3f", delimiter="\t")
         f.write("\n")
     f.close()
-
+"""
 
 # %% [markdown]
 # We can than create a dictionary of output file names and queries to write the Sleuths files for all the ALEs we want to compute: one containing all experiments, one for each individual semantic task category (plus one for the two inverse categories), and one for older and younger children, respectively. Once we apply our function to this dictionary, the Sleuth files should show up under the `results/ale/` directory.
 
 # %%
+"""
 if __name__ == "__main__":
 
     # Create dictionary for which ALE analyses to run
@@ -143,6 +152,7 @@ if __name__ == "__main__":
     # Use our function to write the Sleuth files
     for key, value in zip(ales.keys(), ales.values()):
         write_peaks_to_sleuth(text_file=key, df=exps, query=value)
+        """
 
 
 # %% [markdown]
@@ -189,18 +199,20 @@ def run_ale(text_file, voxel_thresh, cluster_thresh, random_seed, n_iters, outpu
     save(img=img_z_thresh, filename=output_dir + "/" + prefix + "_z_thresh.nii.gz")
     save(img=img_ale_thresh, filename=output_dir + "/" + prefix + "_stat_thresh.nii.gz")
 
-
+# 运行ALE分析
 if __name__ == "__main__":
+    # 替换为你自己的Sleuth文件路径
+    sleuth_file = "/Users/ss/Desktop/psych_meta/script/GenerateNull/data_ALE/unhealth.txt"  
 
     # Apply our function to all the Sleuth files
     for key in ales.keys():
         run_ale(
-            text_file=key,
+            text_file=sleuth_file,
             voxel_thresh=0.001,
-            cluster_thresh=0.01,
+            cluster_thresh=0.05,
             random_seed=1234,
-            n_iters=1000,
-            output_dir="../results/ale/",
+            n_iters=1000, # 我设置的是5000，但这里先用1000试一试
+            output_dir="/Users/ss/Desktop/psych_meta/output/ale",
         )
 
 
@@ -211,7 +223,7 @@ if __name__ == "__main__":
 if __name__ == "__main__":
 
     # Glass brain example
-    img = image.load_img("../results/ale/all_z_thresh.nii.gz")
+    img = image.load_img("/Users/ss/Desktop/psych_meta/output/aleall_z_thresh.nii.gz")
     p = plotting.plot_glass_brain(img, display_mode="lyrz", colorbar=True)
 
     # Cluster table example
